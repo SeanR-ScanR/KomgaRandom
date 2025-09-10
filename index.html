@@ -30,10 +30,6 @@
         <p class="text-center text-gray-400 mb-6">Connectez-vous à votre instance Komga</p>
         <form id="login-form">
             <div class="mb-4">
-                <label for="komga-url" class="block mb-2 text-sm font-medium text-gray-300">URL Komga</label>
-                <input type="url" id="komga-url" placeholder="https://komga.exemple.com" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5" required>
-            </div>
-            <div class="mb-4">
                 <label for="email" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
                 <input type="email" id="email" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5" required>
             </div>
@@ -84,7 +80,6 @@
     const loginSection = document.getElementById('login-section');
     const mangaSection = document.getElementById('manga-section');
     const loginForm = document.getElementById('login-form');
-    const komgaUrlInput = document.getElementById('komga-url');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const getRandomBtn = document.getElementById('get-random-btn');
@@ -98,8 +93,7 @@
     // <!-- Check for saved credentials on page load -->
     document.addEventListener('DOMContentLoaded', () => {
         const apiKey = localStorage.getItem('komgaApiKey');
-        const komgaUrl = localStorage.getItem('komgaUrl');
-        if (apiKey && komgaUrl) {
+        if (apiKey) {
             showMangaSection();
         } else {
             showLoginSection();
@@ -112,15 +106,8 @@
         clearError();
         const email = emailInput.value;
         const password = passwordInput.value;
-        let komgaUrl = komgaUrlInput.value.trim();
-
-        if (komgaUrl.endsWith('/')) {
-            komgaUrl = komgaUrl.slice(0, -1);
-        }
-
         const apiKey = btoa(`${email}:${password}`);
         localStorage.setItem('komgaApiKey', apiKey);
-        localStorage.setItem('komgaUrl', komgaUrl);
         showMangaSection();
     });
 
@@ -128,7 +115,6 @@
     // <!-- Handle logout -->
     logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('komgaApiKey');
-        localStorage.removeItem('komgaUrl');
         showLoginSection();
         mangaDisplay.classList.add('hidden');
     });
@@ -136,9 +122,8 @@
     // <!-- Handle "Get Random Manga" button click -->
     getRandomBtn.addEventListener('click', async () => {
         const apiKey = localStorage.getItem('komgaApiKey');
-        const komgaUrl = localStorage.getItem('komgaUrl');
 
-        if (!apiKey || !komgaUrl) {
+        if (!apiKey) {
             showError("Identifiants non trouvés. Veuillez vous reconnecter.");
             showLoginSection();
             return;
