@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Komga Random Manga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple animation for the spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-full flex items-center justify-center p-4">
+
+<div class="w-full max-w-md mx-auto">
+    <!-- Login Section -->
+    <div id="login-section" class="bg-gray-800 p-8 rounded-lg shadow-xl hidden">
+        <h1 class="text-3xl font-bold text-center mb-2 text-cyan-400">Komga Random Manga</h1>
+        <p class="text-center text-gray-400 mb-6">Connectez-vous à votre instance Komga</p>
+        <form id="login-form">
+            <div class="mb-4">
+                <label for="komga-url" class="block mb-2 text-sm font-medium text-gray-300">URL Komga</label>
+                <input type="url" id="komga-url" placeholder="https://komga.exemple.com" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5" required>
+            </div>
+            <div class="mb-4">
+                <label for="email" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
+                <input type="email" id="email" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5" required>
+            </div>
+            <div class="mb-6">
+                <label for="password" class="block mb-2 text-sm font-medium text-gray-300">Mot de passe</label>
+                <input type="password" id="password" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5" required>
+            </div>
+            <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 focus:ring-4 focus:outline-none focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Connexion</button>
+        </form>
+    </div>
+
+    <!-- Manga Picker Section -->
+    <div id="manga-section" class="hidden text-center">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-cyan-400">Manga Aléatoire</h1>
+            <button id="logout-btn" class="text-gray-400 hover:text-white transition-colors text-sm">Déconnexion</button>
+        </div>
+
+        <div class="mb-6">
+            <button id="get-random-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 focus:ring-4 focus:outline-none focus:ring-cyan-800 font-medium rounded-lg text-md px-5 py-3 text-center transition-colors shadow-lg">
+                Trouver un manga non lu
+            </button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden my-8">
+            <svg class="spinner h-8 w-8 text-cyan-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        <!-- Manga Display -->
+        <div id="manga-display" class="hidden bg-gray-800 p-6 rounded-lg shadow-xl">
+            <img id="manga-cover" src="" alt="Couverture du manga" class="w-2/3 max-w-xs mx-auto rounded-md shadow-lg mb-4 aspect-[2/3] object-cover bg-gray-700">
+            <h2 id="manga-title" class="text-xl font-bold truncate"></h2>
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="hidden mt-4 bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg relative" role="alert">
+        <span class="block sm:inline"></span>
+    </div>
+</div>
+
+<script>
+    // <!-- DOM Element selection -->
+    const loginSection = document.getElementById('login-section');
+    const mangaSection = document.getElementById('manga-section');
+    const loginForm = document.getElementById('login-form');
+    const komgaUrlInput = document.getElementById('komga-url');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const getRandomBtn = document.getElementById('get-random-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const mangaDisplay = document.getElementById('manga-display');
+    const mangaCover = document.getElementById('manga-cover');
+    const mangaTitle = document.getElementById('manga-title');
+    const errorMessage = document.getElementById('error-message');
+    const loadingIndicator = document.getElementById('loading');
+
+    // <!-- Check for saved credentials on page load -->
+    document.addEventListener('DOMContentLoaded', () => {
+        const apiKey = localStorage.getItem('komgaApiKey');
+        const komgaUrl = localStorage.getItem('komgaUrl');
+        if (apiKey && komgaUrl) {
+            showMangaSection();
+        } else {
+            showLoginSection();
+        }
+    });
+
+    // <!-- Handle login form submission -->
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        clearError();
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        let komgaUrl = komgaUrlInput.value.trim();
+
+        if (komgaUrl.endsWith('/')) {
+            komgaUrl = komgaUrl.slice(0, -1);
+        }
+
+        const apiKey = btoa(`${email}:${password}`);
+        localStorage.setItem('komgaApiKey', apiKey);
+        localStorage.setItem('komgaUrl', komgaUrl);
+        showMangaSection();
+    });
+
+
+    // <!-- Handle logout -->
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('komgaApiKey');
+        localStorage.removeItem('komgaUrl');
+        showLoginSection();
+        mangaDisplay.classList.add('hidden');
+    });
+
+    // <!-- Handle "Get Random Manga" button click -->
+    getRandomBtn.addEventListener('click', async () => {
+        const apiKey = localStorage.getItem('komgaApiKey');
+        const komgaUrl = localStorage.getItem('komgaUrl');
+
+        if (!apiKey || !komgaUrl) {
+            showError("Identifiants non trouvés. Veuillez vous reconnecter.");
+            showLoginSection();
+            return;
+        }
+
+        setLoading(true);
+        clearError();
+        mangaDisplay.classList.add('hidden');
+
+        try {
+            const manga  = await fetch("https://komga-proxy.hayasaku.fr", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Basic ${apiKey}`
+                }
+            }).then(res => res.json());
+
+            mangaTitle.textContent = manga.name;
+
+            mangaCover.src = manga.img;
+            mangaDisplay.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Erreur lors de la récupération du manga:', error);
+            showError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // <!-- UI Helper Functions -->
+    function showLoginSection() {
+        loginSection.classList.remove('hidden');
+        mangaSection.classList.add('hidden');
+    }
+
+    function showMangaSection() {
+        loginSection.classList.add('hidden');
+        mangaSection.classList.remove('hidden');
+    }
+
+    function setLoading(isLoading) {
+        getRandomBtn.disabled = isLoading;
+        if (isLoading) {
+            loadingIndicator.classList.remove('hidden');
+            getRandomBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            loadingIndicator.classList.add('hidden');
+            getRandomBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('hidden');
+    }
+
+    function clearError() {
+        errorMessage.textContent = '';
+        errorMessage.classList.add('hidden');
+    }
+</script>
+</body>
+</html>
