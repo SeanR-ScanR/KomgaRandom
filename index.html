@@ -19,6 +19,9 @@
         .spinner {
             animation: spin 1s linear infinite;
         }
+        h2 > a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white h-full flex items-center justify-center p-4">
@@ -65,7 +68,7 @@
         <!-- Manga Display -->
         <div id="manga-display" class="hidden bg-gray-800 p-6 rounded-lg shadow-xl">
             <img id="manga-cover" src="" alt="Couverture du manga" class="w-2/3 max-w-xs mx-auto rounded-md shadow-lg mb-4 aspect-[2/3] object-cover bg-gray-700">
-            <h2 id="manga-title" class="text-xl font-bold truncate"></h2>
+            <h2 class="text-xl font-bold truncate"><a id="manga-title" ></a></h2>
         </div>
     </div>
 
@@ -143,6 +146,7 @@
             }).then(res => res.json());
 
             mangaTitle.textContent = manga.name;
+            mangaTitle.href = `https://komga.lonaoz.be/series/${manga.id}`;
 
             mangaCover.src = manga.img;
             mangaDisplay.classList.remove('hidden');
